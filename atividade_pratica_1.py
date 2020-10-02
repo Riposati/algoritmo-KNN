@@ -486,38 +486,30 @@ k_to_accuracies = {}
 ################################################################################
 pass
 
-aux = num_folds-1 # 4 no caso 
-classifier = KNearestNeighbor() # novo objeto KNN
-accuracy = 0.0
+bigger = 0
+k_resp = 0
 
-for k in k_choices: # executa 10 vezes no caso
-
-  for fold in range(num_folds): # executa 5 vezes no caso
-
-    if fold!=aux: # uso todos os outros diferentes do fold atual para treinar o algoritmo
-
-      classifier.train(X_train_folds[fold], y_train_folds[fold]) # treino com todos menos o fold atual
-
-    if fold==aux: # valido o fold  
+for k in k_choices:
+  
+  k_to_accuracies[k] = []
+  
+  for i in range(num_folds):
     
-      y_test_pred = classifier.predict(X_train_folds[aux], k) # uso para testar os outros
-      
-      #print((y_test_pred))
-      #print("aux => {}".format(aux))
-      #print("fold => {}".format(fold))
+    training_data,test_data = np.concatenate(X_train_folds[:i] + X_train_folds[i+1:]), X_train_folds[i]
+    
+    training_labels, test_labels = np.concatenate(y_train_folds[:i] + y_train_folds[i+1:]), y_train_folds[i]
 
-      # Calcula e exibe a acurácia
-      num_correct = np.sum(y_test_pred == y_train_folds[aux]) # detalhe importante para não dar errado pois y_test não é o fold que quero atual
-      #print(num_correct)
-      accuracy = float(num_correct) / num_test
-      #print('Got %d / %d correct => accuracy: %f' % (num_correct, num_test, accuracy))
+    classifier.train(training_data, training_labels)
 
-    k_to_accuracies[k] = [accuracy]
+    predicted_labels = classifier.predict(test_data, k)
 
-  aux -= 1 # esta parte esta correta para variar o aux e o fold igual no conteudo teorico
+    resp = np.sum(predicted_labels == test_labels) / len(test_labels)
 
-  if aux < 0:
-    aux = num_folds-1
+    if resp > bigger:
+      bigger = resp
+      k_resp = k
+
+    k_to_accuracies[k].append(resp)
 
 ################################################################################
 #                              FIM DE SEU CÓDIGO                               #
@@ -551,7 +543,7 @@ Com base nos resultados anterioes da validação cruzada, escolha o melhor valor
 Você deve ser capaz de obter uma acurácia acima de 28% nos dados de teste.
 """
 
-best_k = max(k_to_accuracies, key=k_to_accuracies.get)
+best_k = k_resp
 
 classifier = KNearestNeighbor()
 classifier.train(X_train, y_train)
